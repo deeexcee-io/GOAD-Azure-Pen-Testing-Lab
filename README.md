@@ -473,8 +473,20 @@ sliver (OTHER_WITCH) > tasks
 
 ```
 
-Now our Beacon is up and running lets run an nmap scan against a DC in the network.
+Now our Beacon is up and running lets run some nmap scans in the networks and look for some vulnerable AD CS Templates. 
 
+First check certify is installed
+
+```bash
+sliver (OTHER_WITCH) > armory install certify
+
+[*] Installing alias 'Certify' (v0.0.3) ... done!
+```
+
+Now task our Beacon with looking for vulnerable templates. As there are 2 Domains, check both sevenkingsoms.local and essos.local
+
+
+```bash
 
 
 
